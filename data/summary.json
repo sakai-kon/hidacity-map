@@ -1,0 +1,20 @@
+{
+  "duration_s": 663.27,
+  "duration_min": 11.05,
+  "start": "2026-08-24 07:48:32.826 UTC+09:00",
+  "end": "2026-08-24 07:59:36.058 UTC+09:00",
+  "barometer_samples": 618,
+  "location_samples": 654,
+  "pressure_min_hpa": 957.84,
+  "pressure_max_hpa": 959.904,
+  "pressure_change_hpa": 0.003,
+  "speed_mean_mps": 1.074,
+  "speed_max_mps": 4.189,
+  "distance_m": 945.3,
+  "height_min_m": 482.5,
+  "height_max_m": 522.7,
+  "height_change_m": -3.0,
+  "device": "iPhone14,5",
+  "os": "26.6",
+  "privacy_note": "Raw latitude/longitude are intentionally not included in this public dashboard."
+}
