@@ -3,33 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HidaCity 3D Sensor Map</title>
-<meta name="description" content="iPhoneセンサーログを3D地図で可視化するデモ">
+<title>HidaCity Sensor Map</title>
+<meta name="description" content="iPhoneセンサーログと現在地を地図で可視化">
 <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div id="map"></div>
 <div class="hud">
-  <div class="brand">HIDACITY MAP <span>3D SENSOR LOG</span></div>
+  <div class="brand">HIDACITY MAP <span>GPS SENSOR LOG</span></div>
   <div class="panel">
-    <h1>3D Sensor Route</h1>
-    <p>地図をドラッグして回転、右ドラッグで視点移動、ホイールでズーム。</p>
+    <h1>散歩ルート</h1>
+    <p>記録したルートを地図上に表示。右下のボタンから現在地も表示できます。</p>
     <div class="stats">
       <div><span>記録</span><strong id="duration">—</strong></div>
       <div><span>距離</span><strong id="distance">—</strong></div>
       <div><span>高さ</span><strong id="elev">—</strong></div>
       <div><span>平均速度</span><strong id="speed">—</strong></div>
     </div>
+    <div class="location-status" id="locationStatus">現在地: 未取得</div>
   </div>
   <div class="controls">
-    <button id="reset">視点リセット</button>
-    <button id="toggleBuildings">建物3D</button>
-    <button id="toggleRoute">ルート</button>
+    <button id="fitRoute">ルート全体</button>
+    <button id="locate">◎ 現在地を表示</button>
+    <button id="follow" disabled>現在地を追従</button>
   </div>
-  <div class="privacy">公開版は位置情報を変換・丸めています。元のGPS座標は公開していません。</div>
 </div>
-<div class="loading" id="loading">3D地図を読み込み中…</div>
+<div class="loading" id="loading">地図を読み込み中…</div>
 <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
 <script src="app.js"></script>
 </body>
