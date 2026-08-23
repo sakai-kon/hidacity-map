@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iPhone Sensor Dashboard</title>
+  <meta name="description" content="iPhoneで記録したセンサーデータを可視化するダッシュボード">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">iPhone SENSOR LOG</p>
+      <h1>センサーデータ・ダッシュボード</h1>
+      <p class="lead">約11分間の記録から、気圧・速度・高度の変化を可視化。</p>
+      <div class="hero-meta">
+        <span id="device">読み込み中…</span>
+        <span id="period">読み込み中…</span>
+      </div>
+    </div>
+  </header>
+  <main class="wrap">
+    <section class="cards" id="cards"></section>
+    <section class="panel">
+      <div class="panel-head"><div><p class="eyebrow">PRESSURE</p><h2>気圧の変化</h2></div><span class="unit">hPa</span></div>
+      <canvas id="pressureChart" height="260"></canvas>
+    </section>
+    <section class="grid-2">
+      <div class="panel"><div class="panel-head"><div><p class="eyebrow">SPEED</p><h2>速度の変化</h2></div><span class="unit">m/s</span></div><canvas id="speedChart" height="240"></canvas></div>
+      <div class="panel"><div class="panel-head"><div><p class="eyebrow">ALTITUDE</p><h2>高度の変化</h2></div><span class="unit">m</span></div><canvas id="heightChart" height="240"></canvas></div>
+    </section>
+    <section class="panel"><div class="panel-head"><div><p class="eyebrow">ANALYSIS</p><h2>簡易解析</h2></div></div><div class="analysis" id="analysis"></div></section>
+    <section class="privacy"><strong>🔒 プライバシーについて</strong><p>公開用ダッシュボードには、生の緯度・経度データを含めていません。移動距離などの集計値だけを利用しています。</p></section>
+  </main>
+  <footer class="wrap footer">Generated from an iPhone sensor log · GitHub Pages ready</footer>
+  <script src="app.js"></script>
+</body>
+</html>
