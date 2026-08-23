@@ -1,12 +1,104 @@
-const $=s=>document.querySelector(s);
-async function load(){
- const [summary,series,routeData]=await Promise.all([fetch('data/summary.json').then(r=>r.json()),fetch('data/series.json').then(r=>r.json()),fetch('data/route.json').then(r=>r.json())]);
- $('#device').textContent=`${summary.device} / iOS ${summary.os}`;$('#period').textContent=`${summary.start} → ${summary.end}`;
- const cards=[['記録時間',`${summary.duration_min} 分`,`${summary.location_samples} location points`],['移動距離',`${(summary.distance_m/1000).toFixed(2)} km`,'位置データから算出'],['平均速度',`${summary.speed_mean_mps.toFixed(2)} m/s`,`${(summary.speed_mean_mps*3.6).toFixed(1)} km/h`],['気圧変化',`${summary.pressure_change_hpa>=0?'+':''}${summary.pressure_change_hpa} hPa`,`${summary.pressure_min_hpa}–${summary.pressure_max_hpa} hPa`]];
- $('#cards').innerHTML=cards.map(c=>`<div class="card"><div class="label">${c[0]}</div><div class="value">${c[1]}</div><div class="sub">${c[2]}</div></div>`).join('');
- drawRoute(routeData.route);drawChart('pressureChart',series.pressure,'hPa');drawChart('speedChart',series.speed,'m/s');drawChart('heightChart',series.height,'m');
- const pd=summary.pressure_max_hpa-summary.pressure_min_hpa;$('#analysis').innerHTML=[['最高速度',`${summary.speed_max_mps.toFixed(2)} m/s（${(summary.speed_max_mps*3.6).toFixed(1)} km/h）`],['高度レンジ',`${summary.height_min_m}–${summary.height_max_m} m（差 ${Math.abs(summary.height_max_m-summary.height_min_m).toFixed(1)} m）`],['気圧レンジ',`${summary.pressure_min_hpa}–${summary.pressure_max_hpa} hPa（幅 ${pd.toFixed(3)} hPa）`],['取得サンプル',`気圧 ${summary.barometer_samples} 点 / 位置 ${summary.location_samples} 点`]].map(x=>`<div class="analysis-row"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');
+const routeURL="data/route3d.json";
+const summaryURL="data/summary.json";
+let map, routeVisible=true, buildingsVisible=true, initial;
+
+async function boot(){
+  const [route,summary]=await Promise.all([
+    fetch(routeURL).then(r=>r.json()),
+    fetch(summaryURL).then(r=>r.json())
+  ]);
+  const coords=route.features[0].geometry.coordinates;
+  const center=coords.reduce((a,p)=>[a[0]+p[0],a[1]+p[1]],[0,0]).map(v=>v/coords.length);
+  initial={center,zoom:15.3,pitch:62,bearing:24};
+
+  document.getElementById("duration").textContent=`${summary.duration_min} 分`;
+  document.getElementById("distance").textContent=`${(summary.distance_m/1000).toFixed(2)} km`;
+  document.getElementById("elev").textContent=`${summary.height_min_m}〜${summary.height_max_m} m`;
+  document.getElementById("speed").textContent=`${(summary.speed_mean_mps*3.6).toFixed(1)} km/h`;
+
+  map=new maplibregl.Map({
+    container:"map",
+    style:"https://tiles.openfreemap.org/styles/liberty",
+    center:initial.center,
+    zoom:initial.zoom,
+    pitch:initial.pitch,
+    bearing:initial.bearing,
+    antialias:true
+  });
+  map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),"top-right");
+  map.on("load",()=>{
+    addLayers(route);
+    document.getElementById("loading").classList.add("hidden");
+  });
+  map.on("error",e=>console.warn(e));
+
+  document.getElementById("reset").onclick=()=>map.jumpTo(initial);
+  document.getElementById("toggleRoute").onclick=()=>{
+    routeVisible=!routeVisible;
+    const v=routeVisible?"visible":"none";
+    ["sensor-route","sensor-route-glow","sensor-points","elevation-blocks"].forEach(id=>map.setLayoutProperty(id,"visibility",v));
+    document.getElementById("toggleRoute").textContent=routeVisible?"ルート":"ルートOFF";
+  };
+  document.getElementById("toggleBuildings").onclick=()=>{
+    buildingsVisible=!buildingsVisible;
+    toggleBuildingLayers();
+    document.getElementById("toggleBuildings").textContent=buildingsVisible?"建物3D":"建物3D OFF";
+  };
 }
-function drawRoute(route){const svg=$('#routeMap'),W=700,H=420,p=70;const xs=route.map(r=>r.x),ys=route.map(r=>r.y),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);const sx=(W-2*p)/(maxX-minX||1),sy=(H-2*p)/(maxY-minY||1),s=Math.min(sx,sy);const ox=(W-(maxX-minX)*s)/2,oy=(H-(maxY-minY)*s)/2;const pts=route.map(r=>`${ox+(r.x-minX)*s},${H-(oy+(r.y-minY)*s)}`).join(' ');let g='';for(let x=20;x<W;x+=50)g+=`<line x1="${x}" y1="0" x2="${x}" y2="${H}" class="grid"/>`;for(let y=20;y<H;y+=50)g+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" class="grid"/>`;svg.innerHTML=`${g}<polyline points="${pts}" class="route-line"/><text x="18" y="30" class="map-label">ANONYMIZED ROUTE</text>`}
-function drawChart(id,data,unit){const c=document.getElementById(id),dpr=devicePixelRatio||1,r=c.getBoundingClientRect(),w=Math.max(320,r.width),h=+c.height;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.scale(dpr,dpr);const pad={l:46,r:16,t:16,b:30},xs=data.map(p=>p.t),ys=data.map(p=>p.v),xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys),yr=ymax-ymin||1,x=t=>pad.l+(t-xmin)/(xmax-xmin||1)*(w-pad.l-pad.r),y=v=>h-pad.b-(v-ymin)/yr*(h-pad.t-pad.b);ctx.font='11px -apple-system,sans-serif';ctx.strokeStyle='#e8ecf0';ctx.fillStyle='#7a8590';for(let i=0;i<4;i++){const yy=pad.t+i*(h-pad.t-pad.b)/3;ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();ctx.fillText((ymax-(ymax-ymin)*i/3).toFixed(unit==='hPa'?2:1),6,yy+4)}ctx.fillText(`${xmin.toFixed(0)}s`,pad.l,h-8);ctx.fillText(`${xmax.toFixed(0)}s`,w-pad.r-32,h-8);ctx.beginPath();data.forEach((p,i)=>{const xx=x(p.t),yy=y(p.v);i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy)});ctx.strokeStyle='#1f2937';ctx.lineWidth=2;ctx.stroke()}
-load().catch(e=>{console.error(e);document.body.insertAdjacentHTML('beforeend','<p style="padding:20px">データの読み込みに失敗しました。GitHub PagesなどHTTP環境で開いてください。</p>')});
+
+function addLayers(route){
+  map.addSource("sensor-route-data",{type:"geojson",data:route});
+
+  map.addLayer({
+    id:"sensor-route-glow",type:"line",source:"sensor-route-data",
+    layout:{visibility:"visible","line-cap":"round","line-join":"round"},
+    paint:{"line-color":"#7dd3fc","line-width":11,"line-opacity":.18,"line-blur":3}
+  });
+  map.addLayer({
+    id:"sensor-route",type:"line",source:"sensor-route-data",
+    layout:{visibility:"visible","line-cap":"round","line-join":"round"},
+    paint:{"line-color":"#ffffff","line-width":4.5,"line-opacity":.98}
+  });
+
+  map.addLayer({
+    id:"sensor-points",type:"circle",source:"sensor-route-data",
+    layout:{visibility:"visible"},
+    paint:{
+      "circle-radius":6,
+      "circle-color":["interpolate",["linear"],["get","h"],-20,"#60a5fa",0,"#e2e8f0",20,"#f59e0b"],
+      "circle-stroke-color":"#0b1725",
+      "circle-stroke-width":2
+    }
+  });
+
+  // Small extruded blocks visualize relative recorded elevation along the route.
+  const blocks={type:"FeatureCollection",features:[]};
+  route.features[0].geometry.coordinates.forEach(p=>{
+    const size=.00007;
+    const h=Math.max(3,Math.min(35,(p[2]||0)+18));
+    const lng=p[0],lat=p[1];
+    blocks.features.push({
+      type:"Feature",
+      properties:{height:h},
+      geometry:{type:"Polygon",coordinates:[[[lng-size,lat-size],[lng+size,lat-size],[lng+size,lat+size],[lng-size,lat+size],[lng-size,lat-size]]]}
+    });
+  });
+  map.addSource("elevation-blocks",{type:"geojson",data:blocks});
+  map.addLayer({
+    id:"elevation-blocks",type:"fill-extrusion",source:"elevation-blocks",
+    paint:{"fill-extrusion-color":"#38bdf8","fill-extrusion-height":["get","height"],"fill-extrusion-base":0,"fill-extrusion-opacity":.55}
+  });
+}
+
+function toggleBuildingLayers(){
+  for(const l of map.getStyle().layers||[]){
+    if(l.type==="fill-extrusion" && l.id!=="elevation-blocks"){
+      try{map.setLayoutProperty(l.id,"visibility",buildingsVisible?"visible":"none");}catch{}
+    }
+  }
+}
+
+boot().catch(err=>{
+  console.error(err);
+  document.getElementById("loading").textContent="3D地図の読み込みに失敗しました。少し待ってから再読み込みしてください。";
+});
