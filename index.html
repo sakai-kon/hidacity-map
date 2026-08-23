@@ -1,19 +1,36 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hida City Sensor Map</title><meta name="description" content="iPhoneセンサーデータの匿名化ルートとセンサー解析">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HidaCity 3D Sensor Map</title>
+<meta name="description" content="iPhoneセンサーログを3D地図で可視化するデモ">
+<link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header class="hero"><div class="wrap"><p class="eyebrow">HIDA CITY SENSOR MAP</p><h1>センサーデータ・マップ</h1><p class="lead">歩行ログを、プライバシーに配慮した相対ルートとして可視化。</p><div class="hero-meta"><span id="device">読み込み中…</span><span id="period">読み込み中…</span></div></div></header>
-<main class="wrap">
-<section class="cards" id="cards"></section>
-<section class="panel"><div class="panel-head"><div><p class="eyebrow">ROUTE</p><h2>移動ルート</h2></div><span class="unit">匿名化済み</span></div><div class="map-wrap"><svg id="routeMap" viewBox="0 0 700 420" role="img" aria-label="匿名化された移動ルート"></svg><div class="map-legend"><span><i class="dot start"></i>記録区間</span><span>25mグリッド化・始点/終点除外</span></div></div></section>
-<section class="panel"><div class="panel-head"><div><p class="eyebrow">PRESSURE</p><h2>気圧の変化</h2></div><span class="unit">hPa</span></div><canvas id="pressureChart" height="260"></canvas></section>
-<section class="grid-2"><div class="panel"><div class="panel-head"><div><p class="eyebrow">SPEED</p><h2>速度の変化</h2></div><span class="unit">m/s</span></div><canvas id="speedChart" height="240"></canvas></div><div class="panel"><div class="panel-head"><div><p class="eyebrow">ALTITUDE</p><h2>高度の変化</h2></div><span class="unit">m</span></div><canvas id="heightChart" height="240"></canvas></div></section>
-<section class="panel"><div class="panel-head"><div><p class="eyebrow">ANALYSIS</p><h2>簡易解析</h2></div></div><div class="analysis" id="analysis"></div></section>
-<section class="privacy"><strong>🔒 公開データについて</strong><p>生の緯度・経度は公開していません。ルートは相対座標化し、約25m単位に丸め、記録の始点・終点も除外しています。</p></section>
-</main><footer class="wrap footer">Generated from an iPhone sensor log · GitHub Pages ready</footer>
+<div id="map"></div>
+<div class="hud">
+  <div class="brand">HIDACITY MAP <span>3D SENSOR LOG</span></div>
+  <div class="panel">
+    <h1>3D Sensor Route</h1>
+    <p>地図をドラッグして回転、右ドラッグで視点移動、ホイールでズーム。</p>
+    <div class="stats">
+      <div><span>記録</span><strong id="duration">—</strong></div>
+      <div><span>距離</span><strong id="distance">—</strong></div>
+      <div><span>高さ</span><strong id="elev">—</strong></div>
+      <div><span>平均速度</span><strong id="speed">—</strong></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button id="reset">視点リセット</button>
+    <button id="toggleBuildings">建物3D</button>
+    <button id="toggleRoute">ルート</button>
+  </div>
+  <div class="privacy">公開版は位置情報を変換・丸めています。元のGPS座標は公開していません。</div>
+</div>
+<div class="loading" id="loading">3D地図を読み込み中…</div>
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
 <script src="app.js"></script>
-</body></html>
+</body>
+</html>
